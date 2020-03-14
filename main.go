@@ -11,7 +11,7 @@ import (
 
 type Client struct {
 	ClientName string
-	TLSEncrypt string
+	TLSEncrypt []byte
 }
 
 type Status struct {
@@ -43,7 +43,7 @@ func AddClientHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	newClient = Client{ClientName : output}
+	newClient = Client{TLSEncrypt : output}
 
 	fmt.Println("New Client:", newClient)
 	json.NewEncoder(w).Encode("New Client:" + newClient.ClientName)

@@ -4,17 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os/exec"
-	//"bufio"
-	//"os"
-	"io"
-	"bytes"
 )
 
 type Client struct {
-	ClientName string
+	Name       string
 	TLSEncrypt []byte
 }
 
@@ -35,38 +32,46 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 // into the OpenVPN Client UI.
 func AddClientHandler(w http.ResponseWriter, r *http.Request) {
 	var newClient Client
+
 	requestBody, _ := ioutil.ReadAll(r.Body)
 	json.Unmarshal(requestBody, &newClient)
 
-	executeOpenVPNScript(newClient.ClientName)
+	fmt.Println("Recieved new client: ", newClient.Name)
+	executeOpenVPNScript(newClient, w)
+}
 
-	TLSCommandString := "sudo cat /root/" + newClient.ClientName + ".ovpn"
-	
-	output, err := exec.Command(TLSCommandString).Output()
+func executeReadNewProfile(clientName string) string {
+	// Command for reading the .ovpn config file created on the server.
+	TLSCommandString := "sudo cat /root/" + clientName + ".ovpn"
+
+	output, err := exec.Command("bash", "-c", TLSCommandString).Output()
 	if err != nil {
 		panic(err)
 	}
-	newClient = Client{TLSEncrypt : output}
-
-	fmt.Println("New Client:", newClient)
-	json.NewEncoder(w).Encode("New Client:\n" + newClient.ClientName + " " + string(newClient.TLSEncrypt))
-
+	return string(output)
 }
 
-func executeOpenVPNScript(clientName string) {
-	c1 := exec.Command("printf", fmt.Sprintf("1\n%s", clientName))
+func executeOpenVPNScript(clientToAdd Client, responseWriter http.ResponseWriter) {
+	// Command to pipe into the shell script, selects option 1 and adds given client name.
+	c1 := exec.Command("printf", fmt.Sprintf("1\n%s", clientToAdd.Name))
 	c2 := exec.Command("bash", "-c", "sudo ~/openvpn-install/openvpn-install.sh")
-	r, w := io.Pipe()
-	c1.Stdout = w
-	c2.Stdin = r
-	var b2 bytes.Buffer
-	c2.Stdout = &b2
 
-	c1.Start()
-	c2.Start()
+	r, w := io.Pipe()
+	c1.Stdout = w // Reader is tied to Stdout of command 1
+	c2.Stdin = r  // Writer is tied to Stdin of command 2
+
+	c1.Start() // Start command 1 execution
+	c2.Start() // Execute command 2
 	c1.Wait()
 	w.Close()
 	c2.Wait()
+
+	clientResponseData := executeReadNewProfile(clientToAdd.Name)
+	fmt.Println(clientResponseData)
+
+	// Write the response to user, allows them to copy/paste the output into an .ovpn file
+	responseWriter.Write([]byte(string("Paste the following into an .ovpn file: \n" + clientResponseData)))
+
 }
 
 func main() {
@@ -75,5 +80,4 @@ func main() {
 	newRouter.HandleFunc("/api/Status", StatusHandler)
 	newRouter.HandleFunc("/api/AddClient", AddClientHandler).Methods("POST")
 	http.ListenAndServe(":8080", newRouter)
-
 }

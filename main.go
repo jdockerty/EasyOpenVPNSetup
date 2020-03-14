@@ -38,9 +38,8 @@ func AddClientHandler(w http.ResponseWriter, r *http.Request) {
 	requestBody, _ := ioutil.ReadAll(r.Body)
 	json.Unmarshal(requestBody, &newClient)
 
-	exec.Command("sudo openvpn-install/openvpn-install.sh")
-	exec.Command("1")
-	exec.Command(newClient.ClientName)
+	executeOpenVPNScript(newClient.ClientName)
+
 	TLSCommandString := "sudo ls /root/" + newClient.ClientName + ".ovpn"
 	
 	output, err := exec.Command(TLSCommandString).Output()
@@ -51,7 +50,7 @@ func AddClientHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("New Client:", newClient)
 	json.NewEncoder(w).Encode("New Client:" + newClient.ClientName)
-	executeOpenVPNScript(newClient.ClientName)
+
 }
 
 func executeOpenVPNScript(clientName string) {

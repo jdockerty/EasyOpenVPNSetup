@@ -7,6 +7,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os/exec"
+	//"bufio"
+	"os"
+	"io"
+	"bytes"
 )
 
 type Client struct {
@@ -47,6 +51,23 @@ func AddClientHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("New Client:", newClient)
 	json.NewEncoder(w).Encode("New Client:" + newClient.ClientName)
+	executeOpenVPNScript(newClient.ClientName)
+}
+
+func executeOpenVPNScript(clientName string) {
+	c1 := exec.Command("printf", fmt.Sprintf("1\n%s", clientName))
+	c2 := exec.Command("bash", "-c", "sudo ~/openvpn-install/openvpn-install.sh")
+	r, w := io.Pipe()
+	c1.Stdout = w
+	c2.Stdin = r
+	var b2 bytes.Buffer
+	c2.Stdout = &b2
+
+	c1.Start()
+	c2.Start()
+	c1.Wait()
+	w.Close()
+	c2.Wait()
 }
 
 func main() {
@@ -55,4 +76,5 @@ func main() {
 	newRouter.HandleFunc("/api/Status", StatusHandler)
 	newRouter.HandleFunc("/api/AddClient", AddClientHandler).Methods("POST")
 	http.ListenAndServe(":8080", newRouter)
+
 }

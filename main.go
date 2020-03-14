@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os/exec"
 	//"bufio"
-	"os"
+	//"os"
 	"io"
 	"bytes"
 )
@@ -40,7 +40,7 @@ func AddClientHandler(w http.ResponseWriter, r *http.Request) {
 
 	executeOpenVPNScript(newClient.ClientName)
 
-	TLSCommandString := "sudo ls /root/" + newClient.ClientName + ".ovpn"
+	TLSCommandString := "sudo cat /root/" + newClient.ClientName + ".ovpn"
 	
 	output, err := exec.Command(TLSCommandString).Output()
 	if err != nil {
@@ -49,7 +49,7 @@ func AddClientHandler(w http.ResponseWriter, r *http.Request) {
 	newClient = Client{TLSEncrypt : output}
 
 	fmt.Println("New Client:", newClient)
-	json.NewEncoder(w).Encode("New Client:" + newClient.ClientName)
+	json.NewEncoder(w).Encode("New Client:\n" + newClient.ClientName + " " + string(newClient.TLSEncrypt))
 
 }
 

@@ -10,11 +10,13 @@ import (
 	"os/exec"
 )
 
+// Client struct for holding corresponding data within the program.
 type Client struct {
 	Name       string
 	TLSEncrypt []byte
 }
 
+// Status struct for status code response in JSON.
 type Status struct {
 	Code int
 }
@@ -42,9 +44,9 @@ func AddClientHandler(w http.ResponseWriter, r *http.Request) {
 
 func executeReadNewProfile(clientName string) string {
 	// Command for reading the .ovpn config file created on the server.
-	TLSCommandString := "sudo cat /root/" + clientName + ".ovpn"
+	readConfigCommand := "sudo cat /root/" + clientName + ".ovpn"
 
-	output, err := exec.Command("bash", "-c", TLSCommandString).Output()
+	output, err := exec.Command("bash", "-c", readConfigCommand).Output()
 	if err != nil {
 		panic(err)
 	}
@@ -60,11 +62,30 @@ func executeOpenVPNScript(clientToAdd Client, responseWriter http.ResponseWriter
 	c1.Stdout = w // Reader is tied to Stdout of command 1
 	c2.Stdin = r  // Writer is tied to Stdin of command 2
 
-	c1.Start() // Start command 1 execution
-	c2.Start() // Execute command 2
-	c1.Wait()
-	w.Close()
-	c2.Wait()
+	err := c1.Start() // Start command 1 execution
+	if err != nil {
+		panic(err)
+	}
+
+	err = c2.Start() // Execute command 2
+	if err != nil {
+		panic(err)
+	}
+
+	err = c1.Wait()
+	if err != nil {
+		panic(err)
+	}
+
+	err = w.Close()
+	if err != nil {
+		panic(err)
+	}
+
+	err = c2.Wait()
+	if err != nil {
+		panic(err)
+	}
 
 	clientResponseData := executeReadNewProfile(clientToAdd.Name)
 	fmt.Println(clientResponseData)

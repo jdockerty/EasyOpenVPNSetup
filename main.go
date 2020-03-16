@@ -98,7 +98,7 @@ func executeOpenVPNScript(clientToAdd Client, responseWriter http.ResponseWriter
 func main() {
 	newRouter := mux.NewRouter()
 	fmt.Println("Running...")
-	newRouter.HandleFunc("/api/Status", StatusHandler)
-	newRouter.HandleFunc("/api/AddClient", AddClientHandler).Methods("POST")
+	newRouter.HandleFunc("/api/status", StatusHandler)
+	newRouter.HandleFunc("/api/addclient", AddClientHandler).Methods("POST")
 	http.ListenAndServe(":8080", newRouter)
 }

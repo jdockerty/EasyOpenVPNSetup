@@ -10,5 +10,11 @@ This project was inspired after considering how I could somewhat automate the [A
 
 The command `terraform init` is required to enable the usage of the files once it is installed. 
 
+Once Terraform is installed and configured, using `terraform apply` from within the folder will provision the appropriate resources.
+
+*(The full configuration of the server can take a couple of minutes to install everything that is required.)*
+
 ## REST API Response
-Sending a POST request to the server containing the appropriate format will mean that it responds with the relevant output required to paste into an `.ovpn` file and load into the OpenVPN UI client. 
+Sending a POST request to the server containing the appropriate JSON format will cause it to respond with the relevant output required to paste into an `.ovpn` file and load into the OpenVPN UI client. This is demonstrated using Postman below.
+
+![POST Request](https://github.com/jdockerty/EasyOpenVPNSetup/blob/master/Images/POST%20request.png)

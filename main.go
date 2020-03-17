@@ -60,7 +60,7 @@ func executeReadNewProfile(clientName string) string {
 func executeOpenVPNScript(clientToAdd Client, responseWriter http.ResponseWriter) {
 	// Command to pipe into the shell script, selects option 1 and adds given client name.
 	c1 := exec.Command("printf", fmt.Sprintf("1\n%s", clientToAdd.Name))
-	c2 := exec.Command("bash", "-c", "sudo ~/openvpn-install/openvpn-install.sh")
+	c2 := exec.Command("bash", "-c", "sudo /home/ec2-user/openvpn-install/openvpn-install.sh")
 
 	r, w := io.Pipe()
 	c1.Stdout = w // Reader is tied to Stdout of command 1
@@ -92,29 +92,17 @@ func executeOpenVPNScript(clientToAdd Client, responseWriter http.ResponseWriter
 	}
 
 	clientResponseData := executeReadNewProfile(clientToAdd.Name)
-	log.Println("Both commands executed")
+	log.Println("Both commands executed.")
 
 	// Write the response to user, allows them to copy/paste the output into an .ovpn file
 	responseWriter.Write([]byte(string("Paste the following into an .ovpn file: \n" + clientResponseData)))
 	log.Println("Client added and response sent.")
 }
 
-// Function used to create a logging file called info.log, log messages are sent here with a timestamp.
-// func log.Println((logMessage... string) {
-// 	logFile, err := os.OpenFile("info.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-//     if err != nil {
-//         log.Fatal(err)
-//     }
-
-// 	defer logFile.Close()
-
-// 	log.SetOutput(logFile)
-// 	log.Println(logMessage)
-// }
 
 func main() {
 	newRouter := mux.NewRouter()
-	log.Println("Running Server...")
+	log.Println("Running server...")
 	newRouter.HandleFunc("/api/status", StatusHandler)
 	newRouter.HandleFunc("/api/addclient", AddClientHandler).Methods("POST")
 	http.ListenAndServe(":8080", newRouter)

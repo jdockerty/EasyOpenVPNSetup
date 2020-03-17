@@ -3,11 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os/exec"
+	"os"
 )
 
 // Client struct for holding corresponding data within the program.
@@ -27,6 +29,7 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	newStatusResponse := Status{Code: http.StatusOK}
 	json.Marshal(newStatusResponse)
 	json.NewEncoder(w).Encode(newStatusResponse)
+	sendLogMessage("Status response.")
 }
 
 // AddClientHandler is used to add a client to the running OpenVPN server.
@@ -38,7 +41,7 @@ func AddClientHandler(w http.ResponseWriter, r *http.Request) {
 	requestBody, _ := ioutil.ReadAll(r.Body)
 	json.Unmarshal(requestBody, &newClient)
 
-	fmt.Println("Recieved new client: ", newClient.Name)
+	sendLogMessage("Client received: " + newClient.Name)
 	executeOpenVPNScript(newClient, w)
 }
 
@@ -50,6 +53,7 @@ func executeReadNewProfile(clientName string) string {
 	if err != nil {
 		panic(err)
 	}
+	sendLogMessage(".ovpn file read.")
 	return string(output)
 }
 
@@ -88,16 +92,29 @@ func executeOpenVPNScript(clientToAdd Client, responseWriter http.ResponseWriter
 	}
 
 	clientResponseData := executeReadNewProfile(clientToAdd.Name)
-	fmt.Println(clientResponseData)
+	sendLogMessage("Both commands executed")
 
 	// Write the response to user, allows them to copy/paste the output into an .ovpn file
 	responseWriter.Write([]byte(string("Paste the following into an .ovpn file: \n" + clientResponseData)))
+	sendLogMessage("Client added and response sent.")
+}
 
+// Function used to create a logging file called info.log, log messages are sent here with a timestamp.
+func sendLogMessage(logMessage... string) {
+	logFile, err := os.OpenFile("info.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+	defer logFile.Close()
+
+	log.SetOutput(logFile)
+	log.Println(logMessage)
 }
 
 func main() {
 	newRouter := mux.NewRouter()
-	fmt.Println("Running...")
+	log.Println("Running Server...")
 	newRouter.HandleFunc("/api/status", StatusHandler)
 	newRouter.HandleFunc("/api/addclient", AddClientHandler).Methods("POST")
 	http.ListenAndServe(":8080", newRouter)
